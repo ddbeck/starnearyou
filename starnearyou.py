@@ -31,8 +31,8 @@ def download_frame(url, download_dir):
     filename = os.path.join(download_dir, split_url(url))
 
     try:
-        with open(filename) as fp:  # already downloaded
-            pass
+        with open(filename) as fp:
+            pass  # if no IOError, it's already downloaded
         return filename
     except IOError:
         sleep(1)
@@ -91,6 +91,7 @@ def split_url(url):
 
 
 def make_sun_gif(work_dir):
+    """Fetch and make the latest Sun GIF in `work_dir`."""
     download_dir = os.path.join(work_dir, 'originals')
     gifs_dir = os.path.join(work_dir, 'gifs')
 
@@ -125,6 +126,7 @@ def make_sun_gif(work_dir):
 # === CLI stuff ===
 
 def oauth_dance(ctx, param, value):
+    """Set up OAuth."""
     if not value or ctx.resilient_parsing:
         return
 
@@ -156,6 +158,7 @@ def oauth_dance(ctx, param, value):
 
 
 def validate_keyfile(ctx, param, value):
+    """Confirm that the keyfile contains valid JSON."""
     if value is not None:
         try:
             auth_info = json.load(value)['twitter']
@@ -168,6 +171,7 @@ def validate_keyfile(ctx, param, value):
 
 
 def validate_dirs(ctx, param, value):
+    """Confirm that the work directory has the right subdirectories."""
     if value is not None:
         originals = os.path.join(value, 'originals')
         gifs = os.path.join(value, 'gifs')
@@ -179,7 +183,7 @@ def validate_dirs(ctx, param, value):
     return value
 
 
-@click.command()
+@click.command(help=__doc__)
 @click.argument('work_dir', type=click.Path(exists=True, file_okay=False,
                                             dir_okay=True, writable=True,
                                             readable=True, resolve_path=True),
