@@ -24,25 +24,6 @@ SDO_URL_TEMPLATE = ("http://sdo.gsfc.nasa.gov/assets/img/browse/"
 DEST_FILENAME_TEMPLATE = "{year:04d}_{month:02d}_{day:02d}_{hour:02d}.gif"
 
 
-def frame_urls(limit=32):
-    """Yield the URLs of frames."""
-    sdo_url = SDO_URL_TEMPLATE.format(year=START.year,
-                                      month=START.month,
-                                      day=START.day,
-                                      hour=START.hour)
-    sdo_index = lxml.html.parse(sdo_url).getroot()
-    sdo_index.make_links_absolute(sdo_url)
-    link_tags = sdo_index.xpath("//a[contains(@href, '_1024_0193.jpg')]")
-
-    for link in link_tags[-1 * limit:]:
-        yield link.get('href')
-
-
-def split_url(url):
-    """Get the filename portion of a URL."""
-    return os.path.basename(urlparse.urlparse(url).path)
-
-
 def download_frame(url, download_dir):
     """Download the URL to a given directory, if it doesn't already exist."""
     filename = os.path.join(download_dir, split_url(url))
@@ -57,6 +38,33 @@ def download_frame(url, download_dir):
         with open(filename, 'w') as fp:
             fp.write(data)
         return filename
+
+
+def frame_urls(limit=32):
+    """Yield the URLs of frames."""
+    sdo_url = SDO_URL_TEMPLATE.format(year=START.year,
+                                      month=START.month,
+                                      day=START.day,
+                                      hour=START.hour)
+    sdo_index = lxml.html.parse(sdo_url).getroot()
+    sdo_index.make_links_absolute(sdo_url)
+    link_tags = sdo_index.xpath("//a[contains(@href, '_1024_0193.jpg')]")
+
+    for link in link_tags[-1 * limit:]:
+        yield link.get('href')
+
+
+def make_gif(frame_filenames, dest_filename):
+    """Convert `frame_filenames` to an animated gif at path `dest_filename`."""
+    convert_cmd = ['convert', '-delay', '15'] + \
+                  [f for f in frame_filenames] + \
+                  [dest_filename]
+    subprocess.call(convert_cmd)
+
+
+def optimize(source, dest):
+    optimize_cmd = 'gifsicle --colors 256 --optimize=02 {0} > {1}'
+    subprocess.call(optimize_cmd.format(source, dest), shell=True)
 
 
 def process_image(filename):
@@ -75,17 +83,9 @@ def save_image(image, filename):
         image.save(fp)
 
 
-def make_gif(frame_filenames, dest_filename):
-    """Convert `frame_filenames` to an animated gif at path `dest_filename`."""
-    convert_cmd = ['convert', '-delay', '15'] + \
-                  [f for f in frame_filenames] + \
-                  [dest_filename]
-    subprocess.call(convert_cmd)
-
-
-def optimize(source, dest):
-    optimize_cmd = 'gifsicle --colors 256 --optimize=02 {0} > {1}'
-    subprocess.call(optimize_cmd.format(source, dest), shell=True)
+def split_url(url):
+    """Get the filename portion of a URL."""
+    return os.path.basename(urlparse.urlparse(url).path)
 
 
 def gifme(work_dir):
