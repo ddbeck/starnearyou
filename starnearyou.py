@@ -24,6 +24,8 @@ SDO_URL_TEMPLATE = ("http://sdo.gsfc.nasa.gov/assets/img/browse/"
 DEST_FILENAME_TEMPLATE = "{year:04d}_{month:02d}_{day:02d}_{hour:02d}.gif"
 
 
+# === image fetching and making ===
+
 def download_frame(url, download_dir):
     """Download the URL to a given directory, if it doesn't already exist."""
     filename = os.path.join(download_dir, split_url(url))
@@ -54,7 +56,7 @@ def frame_urls(limit=32):
         yield link.get('href')
 
 
-def make_gif(frame_filenames, dest_filename):
+def convert_to_gif(frame_filenames, dest_filename):
     """Convert `frame_filenames` to an animated gif at path `dest_filename`."""
     convert_cmd = ['convert', '-delay', '15'] + \
                   [f for f in frame_filenames] + \
@@ -62,7 +64,7 @@ def make_gif(frame_filenames, dest_filename):
     subprocess.call(convert_cmd)
 
 
-def optimize(source, dest):
+def optimize_gif(source, dest):
     optimize_cmd = 'gifsicle --colors 256 --optimize=02 {0} > {1}'
     subprocess.call(optimize_cmd.format(source, dest), shell=True)
 
@@ -88,7 +90,7 @@ def split_url(url):
     return os.path.basename(urlparse.urlparse(url).path)
 
 
-def gifme(work_dir):
+def make_sun_gif(work_dir):
     download_dir = os.path.join(work_dir, 'originals')
     gifs_dir = os.path.join(work_dir, 'gifs')
 
@@ -112,13 +114,15 @@ def gifme(work_dir):
         original_filename = os.path.join(temp_dir, dest_filename)
         final_filename = os.path.join(gifs_dir, dest_filename)
 
-        make_gif(temp_files, original_filename)
-        optimize(original_filename, final_filename)
+        convert_to_gif(temp_files, original_filename)
+        optimize_gif(original_filename, final_filename)
     finally:
         shutil.rmtree(temp_dir)
 
     return final_filename
 
+
+# === CLI stuff ===
 
 def oauth_dance(ctx, param, value):
     if not value or ctx.resilient_parsing:
@@ -188,7 +192,7 @@ def validate_dirs(ctx, param, value):
               callback=oauth_dance, expose_value=False,
               help='Request access key and secret.')
 def cli(work_dir, auth_info):
-    with open(gifme(work_dir), 'rb') as fp:
+    with open(make_sun_gif(work_dir), 'rb') as fp:
         twitter = twython.Twython(auth_info['consumer_key'],
                                   auth_info['consumer_secret'],
                                   auth_info['access_key'],
