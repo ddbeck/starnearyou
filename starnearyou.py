@@ -16,7 +16,7 @@ import requests
 import twython
 
 
-START = datetime.datetime.utcnow() - datetime.timedelta(hours=8)
+START = datetime.datetime.utcnow() - datetime.timedelta(minutes=10)
 
 SDO_URL_TEMPLATE = ("http://sdo.gsfc.nasa.gov/assets/img/browse/"
                     "{year:04d}/{month:02d}/{day:02d}/")
