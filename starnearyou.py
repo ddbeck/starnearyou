@@ -201,8 +201,18 @@ def cli(work_dir, auth_info):
                                   auth_info['consumer_secret'],
                                   auth_info['access_key'],
                                   auth_info['access_secret'])
-        media_id = twitter.upload_media(media=fp)[u'media_id']
-        twitter.update_status(media_ids=[media_id])
+
+        retries = 0
+        while True:
+            try:
+                media_id = twitter.upload_media(media=fp)[u'media_id']
+                twitter.update_status(media_ids=[media_id])
+            except twython.exceptions.TwythonError:
+                if retries >= 3:
+                    break
+                else:
+                    retries += 1
+                    continue
 
 
 if __name__ == '__main__':
