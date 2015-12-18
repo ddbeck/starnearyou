@@ -1,7 +1,9 @@
 Star Near You
 =============
 
-[Star Near You](https://twitter.com/starnearyou) is a bot that's tweeting animated GIFs of the Sun's corona using data from a NASA spacecraft, the [Solar Dynamics Observatory](http://sdo.gsfc.nasa.gov/). It's scheduled to tweet three times a day, showing a time-lapse view of the Sun during the previous eight hours.
+[Star Near You](https://twitter.com/starnearyou) is a bot that's tweeting animated GIFs of the Sun's corona using data from a NASA spacecraft, the [Solar Dynamics Observatory](http://sdo.gsfc.nasa.gov/). It's scheduled to tweet three times a day, showing a time-lapse view of the Sun during the previous eight hours. A typical GIF looks like this:
+
+![](sample.gif)
 
 Star Near You helped to [inspire another bot maker to make an animated GIF bot that stays a little closer to Earth](http://52bots.tumblr.com/post/119334861589/14-rover-lapse-what-bot-that-keeps-up-with).
 
