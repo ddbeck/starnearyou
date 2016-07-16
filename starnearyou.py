@@ -7,7 +7,7 @@ import tempfile
 from time import sleep
 import shutil
 import subprocess
-import urlparse
+from urllib import parse as urlparse
 
 import click
 import lxml.html
@@ -31,14 +31,15 @@ def download_frame(url, download_dir):
     filename = os.path.join(download_dir, split_url(url))
 
     try:
-        with open(filename) as fp:
+        with click.open_file(filename) as fp:
             pass  # if no IOError, it's already downloaded
         return filename
     except IOError:
         sleep(1)
-        data = requests.get(url).content
-        with open(filename, 'w') as fp:
-            fp.write(data)
+        r = requests.get(url, stream=True)
+        with click.open_file(filename, 'wb') as fp:
+            for chunk in r.iter_content(32):
+                fp.write(chunk)
         return filename
 
 
@@ -71,7 +72,7 @@ def optimize_gif(source, dest):
 
 def process_image(filename):
     """Crop and rotate the image."""
-    with open(filename) as fp:
+    with click.open_file(filename, 'rb') as fp:
         image = Image.open(fp)
 
         sun = image.crop((0, 75, 1024, 1024 - 75))
@@ -92,8 +93,8 @@ def process_image(filename):
 
 def save_image(image, filename):
     """Save PIL/Pillow object to file."""
-    with open(filename, 'w') as fp:
-        image.save(fp)
+    with click.open_file(filename, 'wb') as fp:
+        image.save(fp, 'JPEG')
 
 
 def split_url(url):
@@ -208,7 +209,7 @@ def validate_dirs(ctx, param, value):
               help='Request access key and secret.')
 @click.option('--tweet/--no-tweet', default=True)
 def cli(work_dir, auth_info, tweet):
-    with open(make_sun_gif(work_dir), 'rb') as fp:
+    with click.open_file(make_sun_gif(work_dir), 'rb') as fp:
         twitter = twython.Twython(auth_info['consumer_key'],
                                   auth_info['consumer_secret'],
                                   auth_info['access_key'],
