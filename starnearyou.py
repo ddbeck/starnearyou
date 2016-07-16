@@ -218,17 +218,10 @@ def cli(work_dir, auth_info, tweet):
         if not tweet:
             click.echo("File created: {}".format(fp.name))
 
-        retries = 0
-        while tweet:
-            try:
-                media_id = twitter.upload_media(media=fp)[u'media_id']
-                twitter.update_status(media_ids=[media_id])
-            except twython.exceptions.TwythonError:
-                if retries >= 3:
-                    break
-                else:
-                    retries += 1
-                    continue
+        if tweet:
+            upload_result = twitter.upload_media(media=fp)
+            result = twitter.update_status(
+                media_ids=upload_result[u'media_id'])
 
 
 if __name__ == '__main__':
