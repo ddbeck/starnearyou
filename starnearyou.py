@@ -73,7 +73,7 @@ def process_image(filename):
     """Crop and rotate the image."""
     with open(filename) as fp:
         image = Image.open(fp)
-        image = image.resize((1024,1024))
+        image = image.crop((5, 13, 1024 - 5, 1024 - 13))
     return image
 
 
