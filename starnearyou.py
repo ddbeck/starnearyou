@@ -65,7 +65,7 @@ def convert_to_gif(frame_filenames, dest_filename):
 
 
 def optimize_gif(source, dest):
-    optimize_cmd = 'gifsicle --colors 256 --optimize=02 {0} > {1}'
+    optimize_cmd = 'gifsicle --colors 256 --optimize=03 {0} > {1}'
     subprocess.call(optimize_cmd.format(source, dest), shell=True)
 
 
@@ -84,6 +84,8 @@ def process_image(filename):
         final = Image.new(mode, (width, height))
         final.paste(sun, (0, 0))
         final.paste(timestamp, (0, sun.size[1]))
+
+        final.thumbnail((final.size[0] * .95, final.size[1] * .95), Image.LANCZOS)
     return final
 
 
