@@ -195,15 +195,19 @@ def validate_dirs(ctx, param, value):
 @click.option('--request-access', default=False, is_flag=True,
               callback=oauth_dance, expose_value=False,
               help='Request access key and secret.')
-def cli(work_dir, auth_info):
+@click.option('--tweet/--no-tweet', default=True)
+def cli(work_dir, auth_info, tweet):
     with open(make_sun_gif(work_dir), 'rb') as fp:
         twitter = twython.Twython(auth_info['consumer_key'],
                                   auth_info['consumer_secret'],
                                   auth_info['access_key'],
                                   auth_info['access_secret'])
 
+        if not tweet:
+            click.echo("File created: {}".format(fp.name))
+
         retries = 0
-        while True:
+        while tweet:
             try:
                 media_id = twitter.upload_media(media=fp)[u'media_id']
                 twitter.update_status(media_ids=[media_id])
