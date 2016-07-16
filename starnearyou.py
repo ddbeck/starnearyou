@@ -85,7 +85,8 @@ def process_image(filename):
         final.paste(sun, (0, 0))
         final.paste(timestamp, (0, sun.size[1]))
 
-        final.thumbnail((final.size[0] * .95, final.size[1] * .95), Image.LANCZOS)
+        final.thumbnail((final.size[0] * .95, final.size[1] * .95),
+                        Image.ANTIALIAS)
     return final
 
 
