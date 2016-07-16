@@ -73,8 +73,18 @@ def process_image(filename):
     """Crop and rotate the image."""
     with open(filename) as fp:
         image = Image.open(fp)
-        image = image.crop((5, 13, 1024 - 5, 1024 - 13))
-    return image
+
+        sun = image.crop((0, 75, 1024, 1024 - 75))
+        timestamp = image.crop((0, 985, 1024, 1024 - 15))
+
+        mode = sun.mode
+        width = sun.size[0]
+        height = sun.size[1] + timestamp.size[1]
+
+        final = Image.new(mode, (width, height))
+        final.paste(sun, (0, 0))
+        final.paste(timestamp, (0, sun.size[1]))
+    return final
 
 
 def save_image(image, filename):
