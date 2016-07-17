@@ -219,9 +219,16 @@ def cli(work_dir, auth_info, tweet):
             click.echo("File created: {}".format(fp.name))
 
         if tweet:
-            upload_result = twitter.upload_media(media=fp)
-            result = twitter.update_status(
-                media_ids=upload_result[u'media_id'])
+            try:
+                upload_result = twitter.upload_media(media=fp)
+                result = twitter.update_status(
+                    media_ids=upload_result[u'media_id'])
+            except twython.exceptions.TwythonError as err:
+                click.echo("Image upload failed: {}".format(repr(err)))
+                click.echo(err.error_code)
+                click.echo(err.msg)
+                click.echo(err.retry_after)
+                raise
 
 
 if __name__ == '__main__':
