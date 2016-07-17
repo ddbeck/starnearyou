@@ -66,7 +66,7 @@ def convert_to_gif(frame_filenames, dest_filename):
 
 
 def optimize_gif(source, dest):
-    optimize_cmd = 'gifsicle --colors 256 --optimize=03 {0} > {1}'
+    optimize_cmd = 'gifsicle --colors 256 --optimize=02 {0} > {1}'
     subprocess.call(optimize_cmd.format(source, dest), shell=True)
 
 
@@ -74,21 +74,10 @@ def process_image(filename):
     """Crop and rotate the image."""
     with click.open_file(filename, 'rb') as fp:
         image = Image.open(fp)
-
-        sun = image.crop((0, 75, 1024, 1024 - 75))
-        timestamp = image.crop((0, 985, 1024, 1024 - 15))
-
-        mode = sun.mode
-        width = sun.size[0]
-        height = sun.size[1] + timestamp.size[1]
-
-        final = Image.new(mode, (width, height))
-        final.paste(sun, (0, 0))
-        final.paste(timestamp, (0, sun.size[1]))
-
-        final.thumbnail((int(final.size[0] * .95), int(final.size[1] * .95)),
-                        Image.ANTIALIAS)
-    return final
+        image = image.crop((0, 0 + 72, 440, 1024 - 72))
+        image = image.rotate(-90)
+        image = image.resize((440, 220))
+    return image
 
 
 def save_image(image, filename):
@@ -218,17 +207,17 @@ def cli(work_dir, auth_info, tweet):
         if not tweet:
             click.echo("File created: {}".format(fp.name))
 
-        if tweet:
+        retries = 0
+        while tweet:
             try:
-                upload_result = twitter.upload_media(media=fp)
-                result = twitter.update_status(
-                    media_ids=upload_result[u'media_id'])
-            except twython.exceptions.TwythonError as err:
-                click.echo("Image upload failed: {}".format(repr(err)))
-                click.echo(err.error_code)
-                click.echo(err.msg)
-                click.echo(err.retry_after)
-                raise
+                media_id = twitter.upload_media(media=fp)[u'media_id']
+                twitter.update_status(media_ids=[media_id])
+            except twython.exceptions.TwythonError:
+                if retries >= 3:
+                    break
+                else:
+                    retries += 1
+                    continue
 
 
 if __name__ == '__main__':
