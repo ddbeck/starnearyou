@@ -35,7 +35,7 @@ def download_frame(url, download_dir):
             pass  # if no IOError, it's already downloaded
         return filename
     except IOError:
-        sleep(1)
+        sleep(.250)
         data = requests.get(url).content
         with open(filename, 'w') as fp:
             fp.write(data)
