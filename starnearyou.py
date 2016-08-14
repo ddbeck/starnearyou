@@ -227,9 +227,10 @@ def cli(work_dir, auth_info):
             try:
                 media_id = twitter.upload_media(media=fp)[u'media_id']
                 twitter.update_status(media_ids=[media_id])
+                return
             except twython.exceptions.TwythonError:
                 if retries >= 3:
-                    break
+                    return
                 else:
                     retries += 1
                     continue
