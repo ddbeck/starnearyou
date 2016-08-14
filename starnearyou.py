@@ -73,9 +73,29 @@ def process_image(filename):
     """Crop and rotate the image."""
     with open(filename) as fp:
         image = Image.open(fp)
-        image = image.crop((0, 0 + 72, 440, 1024 - 72))
-        image = image.rotate(-90)
-        image = image.resize((440, 220))
+
+        origin = 0
+        width = 1024
+        height = 1024
+        assert image.size == (width, height)
+
+        crop_box = (
+            origin,  # left
+            origin + 72,  # top, except the first 72 pixels
+            width - (width / 2),  # right, except second half
+            height - 72, # bottom, except the last 72 pixels
+        )
+        image = image.crop(crop_box)
+
+        # rotate for a funkier presentation, since GIFs get too big with the
+        # full disk
+        image = image.rotate(-90, Image.NEAREST, expand=True)
+
+        # cut it down to near 440 x 220, which is optimal-ish for the Twitter
+        # timeline
+        # also, thumbnail works in place, rather than making a copy, for some
+        # reason
+        image.thumbnail((image.size[0] / 2, image.size[1] / 2), Image.LANCZOS)
     return image
 
 
