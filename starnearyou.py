@@ -35,13 +35,20 @@ def download_frame(url, download_dir):
 
     try:
         with open(filename) as fp:
-            pass  # if no IOError, it's already downloaded
-        return filename
+            logger.debug("Skipping frame: %s", url)
+            logger.debug("File already exists: %s", filename)
     except IOError:
-        sleep(.250)
+        logger.debug("File does not exist: %s", filename)
+        logger.debug("Downloading frame: %s", url)
+        sleep(.250)  # rate limit
+
         data = requests.get(url).content
         with open(filename, 'w') as fp:
             fp.write(data)
+
+        logger.debug("Frame saved: %s", filename)
+    finally:
+        logger.debug("Downloaded and saved %s", url)
         return filename
 
 
@@ -51,9 +58,13 @@ def frame_urls(limit=32):
                                       month=START.month,
                                       day=START.day,
                                       hour=START.hour)
-    sdo_index = lxml.html.parse(sdo_url).getroot()
+
+    logger.info("Fetching frames index: %s", sdo_url)
+    sdo_index = lxml.html.parse(sdo_url).getroot()  # replace with requests fetching?
     sdo_index.make_links_absolute(sdo_url)
+
     link_tags = sdo_index.xpath("//a[contains(@href, '_1024_0193.jpg')]")
+    logger.info("%s frame URLs found (limit: %s)", len(link_tags), limit)
 
     for link in link_tags[-1 * limit:]:
         yield link.get('href')
@@ -61,19 +72,28 @@ def frame_urls(limit=32):
 
 def convert_to_gif(frame_filenames, dest_filename):
     """Convert `frame_filenames` to an animated gif at path `dest_filename`."""
+    logger.info("Converting %s frames to GIF", len(frame_filenames))
+
     convert_cmd = ['convert', '-delay', '15'] + \
                   [f for f in frame_filenames] + \
                   [dest_filename]
     subprocess.call(convert_cmd)
 
+    logger.debug("Preliminary GIF saved: %s", dest_filename)
+
 
 def optimize_gif(source, dest):
+    logger.debug("Optimizing file size of %s", source)
+
     optimize_cmd = 'gifsicle --colors 256 --optimize=02 {0} > {1}'
     subprocess.call(optimize_cmd.format(source, dest), shell=True)
 
+    logger.debug("Optimized GIF saved: %s", dest)
+
 
 def process_image(filename):
-    """Crop and rotate the image."""
+    """Crop, rotate, and resize the image."""
+    logger.debug("Cropping, rotating, and resizing %s", filename)
     with open(filename) as fp:
         image = Image.open(fp)
 
@@ -99,6 +119,7 @@ def process_image(filename):
         # also, thumbnail works in place, rather than making a copy, for some
         # reason
         image.thumbnail((image.size[0] / 2, image.size[1] / 2), Image.LANCZOS)
+    logger.debug("Cropped, rotated, and resized %s", filename)
     return image
 
 
@@ -115,6 +136,7 @@ def split_url(url):
 
 def make_sun_gif(work_dir):
     """Fetch and make the latest Sun GIF in `work_dir`."""
+    logger.info("Starting to generate a GIF")
     download_dir = os.path.join(work_dir, 'originals')
     gifs_dir = os.path.join(work_dir, 'gifs')
 
@@ -130,6 +152,7 @@ def make_sun_gif(work_dir):
             temp_file = os.path.join(temp_dir, split_url(url))
             save_image(image, temp_file)
             temp_files.append(temp_file)
+        logger.info("%s frames processed", len(temp_files))
 
         dest_filename = DEST_FILENAME_TEMPLATE.format(year=START.year,
                                                       month=START.month,
@@ -140,7 +163,9 @@ def make_sun_gif(work_dir):
 
         convert_to_gif(temp_files, original_filename)
         optimize_gif(original_filename, final_filename)
+        logger.info("Final GIF saved: %s", final_filename)
     finally:
+        logger.debug("Cleaning up temporary files")
         shutil.rmtree(temp_dir)
 
     return final_filename
@@ -248,6 +273,7 @@ def select_level(ctx, param, value):
 def cli(work_dir, tweet, auth_info, logfile, loglevel):
     configure_logging(logfile, loglevel)
 
+    logger.debug("Command-line interface proccessed")
     with open(make_sun_gif(work_dir), 'rb') as fp:
         twitter = twython.Twython(auth_info['consumer_key'],
                                   auth_info['consumer_secret'],
