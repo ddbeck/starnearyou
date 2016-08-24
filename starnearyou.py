@@ -285,14 +285,21 @@ def cli(work_dir, tweet, auth_info, logfile, loglevel):
         while True:
             try:
                 attempts += 1
+                logger.debug("Tweeting (attempt %d of %d)", attempts, limit)
+
                 media_id = twitter.upload_media(media=fp)[u'media_id']
-                twitter.update_status(media_ids=[media_id])
+                tweet_id = twitter.update_status(media_ids=[media_id])[u'id_str']
+
+                tweet_url_template = 'http://twitter.com/starnearyou/status/{}'
+                logger.info("Tweeted %s", tweet_url_template.format(tweet_id))
                 return
             except twython.exceptions.TwythonError as err:
                 logger.exception("Tweeting failed: %r", err)
                 if attempts < limit:
                     continue
                 else:
+                    logger.critical("Tweeting failed %s times, aborting.",
+                                    attempts)
                     break
 
 
