@@ -2,6 +2,8 @@
 
 import datetime
 import json
+import logging
+import logging.handlers
 import os
 import tempfile
 from time import sleep
@@ -23,6 +25,7 @@ SDO_URL_TEMPLATE = ("http://sdo.gsfc.nasa.gov/assets/img/browse/"
 
 DEST_FILENAME_TEMPLATE = "{year:04d}_{month:02d}_{day:02d}_{hour:02d}.gif"
 
+logger = logging.getLogger(__name__)
 
 # === image fetching and making ===
 
@@ -143,6 +146,27 @@ def make_sun_gif(work_dir):
     return final_filename
 
 
+def configure_logging(filename=None, level=logging.INFO):
+    logger.setLevel(min([logging.WARNING, level]))
+
+    # log to screen
+    console = logging.StreamHandler()
+    console_formatter = logging.Formatter("%(levelname)s: %(message)s")
+    console.setFormatter(console_formatter)
+    console.setLevel(logging.WARNING)
+    logger.addHandler(console)
+
+    # log to file
+    if filename is not None:
+        logfile = logging.handlers.RotatingFileHandler(filename,
+            maxBytes=5 * 10 ** 6, backupCount=4)
+        file_fmt = "%(asctime)s - %(levelname)s - %(message)s"
+        file_formatter = logging.Formatter(file_fmt)
+        logfile.setFormatter(file_formatter)
+        logfile.setLevel(level)
+        logger.addHandler(logfile)
+
+
 # === CLI stuff ===
 
 def oauth_dance(ctx, param, value):
@@ -203,6 +227,9 @@ def validate_dirs(ctx, param, value):
     return value
 
 
+def select_level(ctx, param, value):
+    return {'debug': logging.DEBUG, 'info': logging.INFO}[value]
+
 @click.command(help=__doc__)
 @click.argument('work_dir', type=click.Path(exists=True, file_okay=False,
                                             dir_okay=True, writable=True,
@@ -212,10 +239,15 @@ def validate_dirs(ctx, param, value):
 @click.option('--keyfile', 'auth_info', type=click.File('r'),
               required=True, callback=validate_keyfile,
               help='JSON file with Twitter keys and secrets.')
+@click.option('--logfile', type=click.Path(writable=True), default=None)
+@click.option('--loglevel', type=click.Choice(['debug', 'info']),
+              callback=select_level, default=None)
 @click.option('--request-access', default=False, is_flag=True,
               callback=oauth_dance, expose_value=False,
               help='Request access key and secret.')
-def cli(work_dir, auth_info):
+def cli(work_dir, tweet, auth_info, logfile, loglevel):
+    configure_logging(logfile, loglevel)
+
     with open(make_sun_gif(work_dir), 'rb') as fp:
         twitter = twython.Twython(auth_info['consumer_key'],
                                   auth_info['consumer_secret'],
