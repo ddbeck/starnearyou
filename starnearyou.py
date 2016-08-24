@@ -280,18 +280,20 @@ def cli(work_dir, tweet, auth_info, logfile, loglevel):
                                   auth_info['access_key'],
                                   auth_info['access_secret'])
 
-        retries = 0
+        attempts = 0
+        limit = 3
         while True:
             try:
+                attempts += 1
                 media_id = twitter.upload_media(media=fp)[u'media_id']
                 twitter.update_status(media_ids=[media_id])
                 return
-            except twython.exceptions.TwythonError:
-                if retries >= 3:
-                    return
-                else:
-                    retries += 1
+            except twython.exceptions.TwythonError as err:
+                logger.exception("Tweeting failed: %r", err)
+                if attempts < limit:
                     continue
+                else:
+                    break
 
 
 if __name__ == '__main__':
