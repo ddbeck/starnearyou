@@ -261,6 +261,8 @@ def select_level(ctx, param, value):
                                             readable=True, resolve_path=True),
                 envvar='STARNEARYOU_WORK_DIR', required=True,
                 callback=validate_dirs)
+@click.option('--tweet/--no-tweet', default=True,
+              help='Generate a GIF and tweet or skip tweeting.')
 @click.option('--keyfile', 'auth_info', type=click.File('r'),
               required=True, callback=validate_keyfile,
               help='JSON file with Twitter keys and secrets.')
@@ -275,6 +277,10 @@ def cli(work_dir, tweet, auth_info, logfile, loglevel):
 
     logger.debug("Command-line interface proccessed")
     with open(make_sun_gif(work_dir), 'rb') as fp:
+        if not tweet:
+            logger.warn("--no-tweet option selected, not tweeting")
+            return
+
         twitter = twython.Twython(auth_info['consumer_key'],
                                   auth_info['consumer_secret'],
                                   auth_info['access_key'],
