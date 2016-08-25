@@ -191,7 +191,7 @@ def configure_logging(filename=None, level=logging.INFO):
 
     # log to screen
     console = logging.StreamHandler()
-    console_formatter = logging.Formatter("%(levelname)s: %(message)s")
+    console_formatter = logging.Formatter("%(levelname)s - %(message)s")
     console.setFormatter(console_formatter)
     console.setLevel(logging.WARNING)
     logger.addHandler(console)
