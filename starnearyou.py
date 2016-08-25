@@ -58,9 +58,24 @@ def frame_urls(limit=32):
                                       month=START.month,
                                       day=START.day,
                                       hour=START.hour)
-
     logger.info("Fetching frames index: %s", sdo_url)
-    sdo_index = lxml.html.parse(sdo_url).getroot()  # replace with requests fetching?
+
+    max_tries = 3
+    for attempt in range(max_tries):
+        try:
+            response = requests.get(sdo_url, stream=True, timeout=5 * 60)
+        except requests.exceptions.RequestException as err:
+            logger.debug("Attempt %d of %d failed", attempt + 1, max_tries)
+            if attempt < max_tries - 1:
+                continue
+            else:
+                raise
+        break
+
+    response.raw.decode_content = True
+    logger.debug("Frames index reponse: %s", response.status_code)
+
+    sdo_index = lxml.html.parse(response.raw, base_url=sdo_url).getroot()
     sdo_index.make_links_absolute(sdo_url)
 
     link_tags = sdo_index.xpath("//a[contains(@href, '_1024_0193.jpg')]")
