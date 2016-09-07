@@ -9,7 +9,7 @@ import tempfile
 from time import sleep
 import shutil
 import subprocess
-import urlparse
+import urllib.parse
 
 import click
 import lxml.html
@@ -204,7 +204,7 @@ def make_sun_gif(work_dir):
         temp_files = []
         for image, url in zip(processed_images, urls):
             temp_file = os.path.join(temp_dir, split_url(url))
-            save_image(image, temp_file)
+            image.save(temp_file)
             temp_files.append(temp_file)
         logger.info("%s frames processed", len(temp_files))
 
@@ -270,19 +270,21 @@ def download_frame(url, download_dir):
         with open(filename) as fp:
             logger.debug("Skipping frame: %s", url)
             logger.debug("File already exists: %s", filename)
+            logger.debug("Using existing frame: %s", url)
     except IOError:
         logger.debug("File does not exist: %s", filename)
         logger.debug("Downloading frame: %s", url)
         sleep(.250)  # rate limit
 
-        data = requests.get(url).content
-        with open(filename, 'w') as fp:
-            fp.write(data)
+        response = requests.get(url, stream=True)
+        response.raw.decode_content = True
+        with open(filename, 'wb') as fp:
+            shutil.copyfileobj(response.raw, fp)
 
         logger.debug("Frame saved: %s", filename)
-    finally:
-        logger.debug("Downloaded and saved %s", url)
-        return filename
+        logger.debug("Downloaded and saved: %s", url)
+
+    return filename
 
 
 # ================
@@ -292,7 +294,7 @@ def download_frame(url, download_dir):
 def process_image(filename):
     """Crop, rotate, and resize the image."""
     logger.debug("Cropping, rotating, and resizing %s", filename)
-    with open(filename) as fp:
+    with open(filename, 'rb') as fp:
         image = Image.open(fp)
 
         origin = 0
@@ -351,15 +353,9 @@ def optimize_gif(source, dest):
 # Utilities
 # =========
 
-def save_image(image, filename):
-    """Save PIL/Pillow object to file."""
-    with open(filename, 'w') as fp:
-        image.save(fp)
-
-
 def split_url(url):
     """Get the filename portion of a URL."""
-    return os.path.basename(urlparse.urlparse(url).path)
+    return os.path.basename(urllib.parse.urlparse(url).path)
 
 
 if __name__ == '__main__':
