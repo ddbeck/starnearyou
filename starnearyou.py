@@ -9,6 +9,7 @@ import tempfile
 from time import sleep
 import shutil
 import subprocess
+import time
 import urllib.parse
 
 import click
@@ -28,6 +29,8 @@ start_time = datetime.datetime.utcnow() - datetime.timedelta(minutes=10)
 SDO_URL_TEMPLATE = ("http://sdo.gsfc.nasa.gov/assets/img/browse/"
                     "{year:04d}/{month:02d}/{day:02d}/")
 DEST_FILENAME_TEMPLATE = "{year:04d}_{month:02d}_{day:02d}_{hour:02d}.gif"
+
+DELETION_LIMIT = 24 * 60 * 60
 
 
 # ======================
@@ -143,6 +146,8 @@ def cli(work_dir, tweet, auth_info, logfile, loglevel):
 
                 logger.info("Tweeted http://twitter.com/starnearyou/status/%s",
                             tweet_response[u'id_str'])
+
+                clean_up(work_dir)
                 return
             except twython.exceptions.TwythonError as err:
                 logger.exception("Tweeting failed: %r", err)
@@ -190,7 +195,6 @@ def configure_logging(filename=None, level=logging.INFO):
 
 def make_sun_gif(work_dir):
     """Fetch and make the latest Sun GIF in `work_dir`."""
-    logger.info("start_timeing to generate a GIF")
     download_dir = os.path.join(work_dir, 'originals')
     gifs_dir = os.path.join(work_dir, 'gifs')
 
@@ -349,6 +353,22 @@ def optimize_gif(source, dest):
     logger.debug("Optimized GIF saved: %s", dest)
 
 
+def clean_up(work_dir):
+    logger.debug("Cleaning up downloaded files")
+
+    download_dir = os.path.join(work_dir, 'originals')
+    deletion_count = 0
+
+    for dirpath, dirnames, filenames in os.walk(download_dir):
+        for filename in filenames:
+            fpath = os.path.join(dirpath, filename)
+            if is_file_too_old(fpath):
+                logger.debug('Deleting %s', fpath)
+                deletion_count += 1
+                os.remove(fpath)
+
+    logger.info('Deleted %s files', deletion_count)
+
 # =========
 # Utilities
 # =========
@@ -356,6 +376,14 @@ def optimize_gif(source, dest):
 def split_url(url):
     """Get the filename portion of a URL."""
     return os.path.basename(urllib.parse.urlparse(url).path)
+
+
+def is_file_too_old(fpath):
+    """Return whether the file is older than the `DELETION_LIMIT` threshhold in
+    seconds.
+    """
+    mtime = os.path.getmtime(fpath)
+    return (time.time() - mtime) > DELETION_LIMIT
 
 
 if __name__ == '__main__':
