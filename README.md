@@ -1,6 +1,8 @@
 Star Near You
 =============
 
+by [@ddbeck](https://twitter.com/ddbeck)
+
 [Star Near You](https://twitter.com/starnearyou) is a bot that's tweeting animated GIFs of the Sun's corona using data from a NASA spacecraft, the [Solar Dynamics Observatory](http://sdo.gsfc.nasa.gov/). It's scheduled to tweet three times a day, showing a time-lapse view of the Sun during the previous eight hours. A typical GIF looks like this:
 
 ![](sample.gif)
@@ -17,10 +19,17 @@ Thanks to NASA/SDO and the AIA, EVE, and HMI science teams for providing the dat
 Installation and configuration
 ------------------------------
 
+To set up Star Near You, you'll need the following:
+
+* Python 3.5 or later
+* ImageMagick
+* Gifsicle
+
 To install and configure Star Near You:
 
   1. Run `pip install https://github.com/ddbeck/starnearyou`.
-  2. Create a [Twitter API app](https://apps.twitter.com/) and put your API keys in a JSON file, like this:
+  2. Create a work directory with two subdirectories, `gifs` and `originals`. This is where downloaded files and generated GIFs are stored.
+  3. Create a [Twitter API app](https://apps.twitter.com/) and put your API keys in a JSON file, like this:
 
      ```
      {
@@ -31,14 +40,16 @@ To install and configure Star Near You:
      }
      ```
    
-  3. Run `starnearyou --keyfile <path_to_keyfile> --request-access`, where `<path_to_keyfile>` is the path to the JSON file you created in the previous step.
-  4. Follow the instructions shown. When you're finished, add the access key and secret to the JSON file.
+  4. Run `starnearyou --keyfile <path_to_keyfile> --request-access`, where `<path_to_keyfile>` is the path to the JSON file you created in the previous step.
+  5. Follow the instructions shown. When you're finished, add the access key and secret to the JSON file.
 
 
 Usage
 -----
 
-To tweet with Star Near You, run `starnearyou --keyfile <path_to_keyfile>`.
+To tweet with Star Near You, run `starnearyou --keyfile <path_to_keyfile>` in your work directory.
+
+Although this is an art piece, if you need help or have a suggestion for improving this bot, then you may open an issue on the GitHub repository.
 
 
 License
