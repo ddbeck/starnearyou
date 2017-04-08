@@ -12,6 +12,7 @@ import subprocess
 import time
 import urllib.parse
 
+import backoff
 import click
 import lxml.html
 from PIL import Image
@@ -152,6 +153,7 @@ def cli(work_dir, tweet, auth_info, logfile, loglevel):
             except twython.exceptions.TwythonError as err:
                 logger.exception("Tweeting failed: %r", err)
                 if attempts < limit:
+                    time.sleep(1)
                     continue
                 else:
                     logger.critical("Tweeting failed %s times, aborting.",
@@ -176,6 +178,9 @@ def configure_logging(filename=None, level=logging.INFO):
     console.setFormatter(console_formatter)
     console.setLevel(logging.WARNING)
     logger.addHandler(console)
+    logging.getLogger('backoff').addHandler(console)
+
+    logging.getLogger('backoff').setLevel(logging.INFO)
 
     # log to file
     if filename is not None:
@@ -187,6 +192,7 @@ def configure_logging(filename=None, level=logging.INFO):
         logfile.setFormatter(file_formatter)
         logfile.setLevel(level)
         logger.addHandler(logfile)
+        logging.getLogger('backoff').addHandler(logfile)
 
 
 # =======================
@@ -233,6 +239,9 @@ def make_sun_gif(work_dir):
 # Image fetching
 # ==============
 
+@backoff.on_exception(backoff.expo,
+                     requests.exceptions.RequestException,
+                     max_tries=8)
 def frame_urls(limit=32):
     """Yield the URLs of frames."""
     sdo_url = SDO_URL_TEMPLATE.format(year=start_time.year,
@@ -241,18 +250,7 @@ def frame_urls(limit=32):
                                       hour=start_time.hour)
     logger.info("Fetching frames index: %s", sdo_url)
 
-    max_tries = 3
-    for attempt in range(max_tries):
-        try:
-            response = requests.get(sdo_url, stream=True, timeout=5 * 60)
-        except requests.exceptions.RequestException:
-            logger.debug("Attempt %d of %d failed", attempt + 1, max_tries)
-            if attempt < max_tries - 1:
-                continue
-            else:
-                raise
-        break
-
+    response = requests.get(sdo_url, stream=True, timeout=5 * 60)
     response.raw.decode_content = True
     logger.debug("Frames index reponse: %s", response.status_code)
 
@@ -265,7 +263,9 @@ def frame_urls(limit=32):
     for link in link_tags[-1 * limit:]:
         yield link.get('href')
 
-
+@backoff.on_exception(backoff.expo,
+                     requests.exceptions.RequestException,
+                     max_tries=8)
 def download_frame(url, download_dir):
     """Download the URL to a given directory, if it doesn't already exist."""
     filename = os.path.join(download_dir, split_url(url))

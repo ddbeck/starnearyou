@@ -5,6 +5,7 @@ setup(
     version='0.1.dev',
     py_modules=['starnearyou'],
     install_requires=[
+        'backoff',
         'Click',
         'lxml',
         'Pillow',
